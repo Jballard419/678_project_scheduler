@@ -13,6 +13,8 @@
 
   /* data */
 }node_t;
+
+
 typedef struct _priqueue_t
 {
 
@@ -35,4 +37,3 @@ int    priqueue_size     (priqueue_t *q);
 void   priqueue_destroy  (priqueue_t *q);
 
 #endif /* LIBPQUEUE_H_ */
-struct
