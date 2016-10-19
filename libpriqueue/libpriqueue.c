@@ -71,8 +71,10 @@ int priqueue_offer(priqueue_t *q, void *ptr)
 	tempnode = oldnode->lower_node;
 	i++;
 } ;
+if(tempnode == NULL){
 	oldnode ->lower_node = newnode;
 	q->size ++;
+}
 	return i;
 }
 
