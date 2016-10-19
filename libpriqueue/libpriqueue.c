@@ -20,7 +20,7 @@
 void priqueue_init(priqueue_t *q, int(*comparer)(const void *, const void *))
 {
 	q->size=0;
-	q->comparer=*comparer;
+	q->comparer=comparer;
 	q->frontnode = NULL;
 }
 
@@ -34,9 +34,9 @@ void priqueue_init(priqueue_t *q, int(*comparer)(const void *, const void *))
  */
 int priqueue_offer(priqueue_t *q, void *ptr)
 {
-	node_t *newnode = node_t* malloc(sizeof(node_t));
+	node_t *newnode = (node_t*)malloc(sizeof(node_t));
 	//int node
-	node_int(newnode, ptr);
+	node_init(newnode, ptr);
 	if(q->frontnode==NULL ){
 		q->size=1;
 		q->frontnode=newnode;
@@ -45,7 +45,7 @@ int priqueue_offer(priqueue_t *q, void *ptr)
 	node_t *tempnode = q->frontnode;
 	node_t *oldnode;
 	int i= 1;
-	while(tempnode!= NULL); {
+	while(tempnode!= NULL) {
 		/* code */
 
 
@@ -116,7 +116,7 @@ void *priqueue_poll(priqueue_t *q)
  */
 void *priqueue_at(priqueue_t *q, int index)
 {
-	if(q->size=<index)
+	if(q->size<=index)
 		return NULL;
 	node_t *tempnode = q->frontnode;
 	node_t *oldnode=NULL;
@@ -163,7 +163,7 @@ int priqueue_remove(priqueue_t *q, void *ptr)
 	while (tempnode != NULL) {
 		if(q->comparer(tempnode->value, ptr)==0)
 		{
-			oldnode->frontnode=tempnode->lower_node;
+			oldnode->lower_node=tempnode->lower_node;
 			free(tempnode->value);
 			free(tempnode);
 			removed ++;
@@ -191,7 +191,7 @@ int priqueue_remove(priqueue_t *q, void *ptr)
  */
 void *priqueue_remove_at(priqueue_t *q, int index)
 {
-	if(q->size=<index)
+	if(q->size<=index)
 		return NULL;
 	node_t *tempnode = q->frontnode;
 	node_t *oldnode=NULL;
@@ -201,7 +201,7 @@ void *priqueue_remove_at(priqueue_t *q, int index)
 		tempnode = oldnode->lower_node;
 
 	}
-	temp_value= tempnode-> value;
+	void *temp_value= tempnode-> value;
 	if(oldnode!=NULL)
 	{
 		oldnode ->lower_node = tempnode -> lower_node;

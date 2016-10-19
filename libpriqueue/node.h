@@ -4,16 +4,17 @@
 
 typedef struct node_t {
   void *value;
-  node_t *lower_node;
+ struct node_t *lower_node;
 
   /* data */
 }node_t;
 
 
-void node_int(node_t *n, void *v) {
+void node_init(node_t *n, void *v) {
   /* code */
-  n->value= *v;
+  n->value= v;
   n->lower_node=NULL;
+  return;
 }
 
 #endif

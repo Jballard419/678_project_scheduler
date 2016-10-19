@@ -9,9 +9,10 @@
 */
 typedef struct _priqueue_t
 {
-  node *frontnode;
+  
+  node_t  *frontnode;
   int size;
-  int comparer((const void *elem1, const void *elem2));
+  int (*comparer)(const void *, const void *);
 } priqueue_t;
 
 
