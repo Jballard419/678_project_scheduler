@@ -1,0 +1,13 @@
+AuthUserFile /users/heechul/.htpasswd
+AuthName Private
+AuthType Basic
+
+<Limit GET>
+satisfy any
+order deny,allow
+deny from all
+allow from 129.237.0.0/16
+allow from 10.0.0.0/8
+require valid-user
+</Limit>
+
