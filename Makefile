@@ -11,10 +11,10 @@ all: simulator queuetest doc/html
 doc/html: doc/Doxyfile libpriqueue/libpriqueue.c libscheduler/libscheduler.c
 	doxygen doc/Doxyfile
 
-simulator: simulator.o libscheduler/libscheduler.o libpriqueue/libpriqueue.o
+simulator: simulator.o libscheduler/libscheduler.o libpriqueue/libpriqueue.o libpriqueue/node.o
 	$(CC) $^ -o $@
 
-queuetest: queuetest.o libpriqueue/libpriqueue.o
+queuetest: queuetest.o libpriqueue/libpriqueue.o libpriqueue/node.o
 	$(CC) $^ -o $@
 
 queuetest.o: queuetest.c
@@ -25,6 +25,9 @@ libscheduler/libscheduler.o: libscheduler/libscheduler.c libscheduler/libschedul
 
 libpriqueue/libpriqueue.o: libpriqueue/libpriqueue.c libpriqueue/libpriqueue.h
 	$(CC) -c $(FLAGS) $(INC) $< -o $@
+
+libpriqueue/node.o: libpriqueue/node.c libpriqueue/node.h
+		$(CC) -c $(FLAGS) $(INC) $< -o $@
 
 simulator.o: simulator.c libscheduler/libscheduler.h
 	$(CC) -c $(FLAGS) $(INC) $< -o $@
