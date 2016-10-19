@@ -15,6 +15,6 @@ void node_init(node_t *n, void *v) {
   n->value= v;
   n->lower_node=NULL;
   return;
-}
+};
 
 #endif
