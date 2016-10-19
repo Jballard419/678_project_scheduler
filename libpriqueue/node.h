@@ -9,12 +9,13 @@ typedef struct node_t {
   /* data */
 }node_t;
 
+void node_init(node_t *n, void *v);
+#endif
 
 void node_init(node_t *n, void *v) {
   /* code */
   n->value= v;
   n->lower_node=NULL;
   return;
-}
+};
 
-#endif
