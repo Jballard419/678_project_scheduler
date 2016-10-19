@@ -49,11 +49,11 @@ int priqueue_offer(priqueue_t *q, void *ptr)
 	struct node_t *tempnode = q->frontnode;
 	struct node_t *oldnode;
 	int i= 1;
+	struct node_t *tempnode = q->frontnode;
 	while(tempnode!= NULL) {
 		/* code */
 
 
-	struct node_t *tempnode = q->frontnode;
 
 	if ( q-> comparer(newnode->value, tempnode->value)>= 0)
 	{
