@@ -34,9 +34,11 @@ void priqueue_init(priqueue_t *q, int(*comparer)(const void *, const void *))
  */
 int priqueue_offer(priqueue_t *q, void *ptr)
 {
+
 	struct node_t *newnode = (struct node_t*)malloc(sizeof(struct node_t));
+
 	//int node
-	
+
 	newnode->lower_node = NULL;
 	newnode->value=ptr;
 	if(q->frontnode==NULL ){
