@@ -55,7 +55,7 @@ int priqueue_offer(priqueue_t *q, void *ptr)
 
 	struct node_t *tempnode = q->frontnode;
 
-	if ( q-> comparer(newnode->value, tempnode->value)> 0)
+	if ( q-> comparer(newnode->value, tempnode->value)>= 0)
 	{
 		newnode->lower_node =tempnode;
 		if (oldnode==NULL) {
@@ -65,7 +65,7 @@ int priqueue_offer(priqueue_t *q, void *ptr)
 			/* code */
 		}
 		q->size ++;
-		return i;
+		break;
 	}
 	oldnode = tempnode;
 	tempnode = oldnode->lower_node;
