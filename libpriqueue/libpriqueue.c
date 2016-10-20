@@ -36,46 +36,29 @@ int priqueue_offer(priqueue_t *q, void *ptr)
 {
 
 	struct node_t *newnode = (struct node_t*)malloc(sizeof(struct node_t));
-
-	//int node
-
 	newnode->lower_node = NULL;
 	newnode->value=ptr;
+	int i= 0;
+	struct node_t *tempnode = q->frontnode;
+	struct node_t *oldnode = NULL;
 	if(q->frontnode==NULL ){
 		q->size=1;
 		q->frontnode=newnode;
 		return 0;
 	}
-	struct node_t *tempnode = q->frontnode;
-	struct node_t *oldnode;
-	int i= 1;
-
-	while(i<=q->size) {
-		/* code */
-
-
-
-	if ( q-> comparer(newnode->value, tempnode->value)< 0)
-	{
-		newnode->lower_node =tempnode;
-		if (oldnode==NULL) {
-			q-> frontnode = newnode;
-		} else {
-			oldnode ->lower_node = newnode;
-			/* code */
-		}
-		q->size ++;
-		break;
+	while (q-> comparer(ptr, tempnode->value)> 0) {
+		oldnode = tempnode;
+		tempnode = oldnode->lower_node;
+		i++;
+		if (i == q->size)
+			break;
 	}
-	oldnode = tempnode;
-	tempnode = oldnode->lower_node;
-	i++;
-} ;
-if(i>q->size){
-	oldnode ->lower_node = newnode;
-  newnode->lower_node= NULL;
-  q->size ++;
-}
+	if (oldnode==NULL) {
+		q-> frontnode = newnode;
+	} else {
+		oldnode ->lower_node = newnode;
+	}
+	newnode->lower_node = tempnode;
 	return i;
 }
 
@@ -163,7 +146,7 @@ int priqueue_remove(priqueue_t *q, void *ptr)
 //			free(tempnode->value);
 //			free(tempnode);
 			removed ++;
-      
+
 
 		}else
 		{
