@@ -18,19 +18,21 @@ typedef struct _job_t
 {
   int job_id;
   int sent_time;
-  int end_time;
-  int wait_time;
+  int end_time ;
+  int wait_time ;
   int run_time;
   int priority;
-	int rrindex;
+	int rrindex ;
 
 } job_t;
 
 int fcfs(const void * a, const void * b)
 {
+
   job_t job1 = *((job_t *)a);
   job_t job2 = *((job_t *)b);
-
+	if (job1.job_id == job2.job_id)
+		return 0;
 	return ( job1.sent_time -  job2.sent_time );
 
 }
@@ -38,7 +40,8 @@ int sjf(const void * a, const void * b)
 {
   job_t job1 = *((job_t *)a);
   job_t job2 = *((job_t *)b);
-
+	if (job1.job_id == job2.job_id)
+		return 0;
 	return ( job1.run_time -  job2.run_time );
 }
 
@@ -46,6 +49,8 @@ int psjf(const void * a, const void * b)
 {
   job_t job1 = *((job_t *)a);
   job_t job2 = *((job_t *)b);
+	if (job1.job_id == job2.job_id)
+		return 0;
   if(job1.priority != job2.priority)
 	 return ( job1.priority -  job2.priority );
   return ( job1.run_time -  job2.run_time );
@@ -54,16 +59,24 @@ int pri(const void * a, const void * b)
 {
   job_t job1 = *((job_t *)a);
   job_t job2 = *((job_t *)b);
+	if (job1.job_id == job2.job_id)
+		return 0;
 	return ( job1.priority -  job2.priority );
 }
 int ppri(const void * a, const void * b)
 {
+	job_t job1 = *((job_t *)a);
+  job_t job2 = *((job_t *)b);
+	if (job1.job_id == job2.job_id)
+		return 0;
 	return ( *(int*)a - *(int*)b ); //modify for run time
 }
 int rr(const void * a, const void * b)
 {
 	job_t job1 = *((job_t *)a);
   job_t job2 = *((job_t *)b);
+	if (job1.job_id == job2.job_id)
+		return 0;
 	if (job1.rrindex == job2.rrindex)
 		return ( job1.rrindex - job2.rrindex );
 	return ( *(int*)a - *(int*)b ); //modify for run time
@@ -86,13 +99,26 @@ void scheduler_start_up(int cores, scheme_t scheme)
 {
   priqueue_t queues[cores];
   for (int i = 0; i < cores; i++) {
-    /* code */
+    // build the queues
   }
 
 
 }
+	// helper funiction to make a job
+job_t* init_job(int job_number, int time, int running_time, int priority)
+{
+	job_t newjob*= malloc(sizeof(job_t));
+	newjob->job_id=job_number;
+	newjob->sent_time=time;
+	newjob->run_time=running_time;
+	newjob->priority= priority;
+	newjob->wait_time= 0;
+	newjob -> end_time=-1;
+	newjob -> rrindex =0;
+	return newjob
 
 
+}
 /**
   Called when a new job arrives.
 
@@ -113,8 +139,14 @@ void scheduler_start_up(int cores, scheme_t scheme)
   @return -1 if no scheduling changes should be made.
 
  */
-int scheduler_new_job(int job_number, int time, int running_time, int priority)
+
+
+ int scheduler_new_job(int job_number, int time, int running_time, int priority)
 {
+	job_t newjob*= init_job(job_number,time,running_time,priority);
+
+	//decided which core
+	// offer to correct queue
 	return -1;
 }
 
@@ -135,6 +167,10 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
  */
 int scheduler_job_finished(int core_id, int job_number, int time)
 {
+	//pop from job
+	//free job
+	//peek at top get job_id
+	// return job_id of front
 	return -1;
 }
 
