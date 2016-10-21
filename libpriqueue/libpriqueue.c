@@ -144,7 +144,7 @@ int priqueue_remove(priqueue_t *q, void *ptr)
 		if(q->comparer(tempnode->value, ptr)==0)
 		{
 			q->frontnode=tempnode->lower_node;
-//			free(tempnode->value);
+			//free(tempnode->value);
 			free(tempnode);
 			removed ++;
 			tempnode=q->frontnode;
