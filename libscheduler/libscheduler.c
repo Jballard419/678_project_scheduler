@@ -149,7 +149,12 @@ int scheduler_job_finished(int core_id, int job_number, int time)
  */
 int scheduler_quantum_expired(int core_id, int time)
 {
+	//job = pop
+	//job round robin index +1
+	//might want t
+	//offer job back to the queue
 	return -1;
+
 }
 
 
@@ -157,7 +162,8 @@ int scheduler_quantum_expired(int core_id, int time)
   Returns the average waiting time of all jobs scheduled by your scheduler.
 
   Assumptions:
-    - This function will only be called after all scheduling is complete (all jobs that have arrived will have finished and no new jobs will arrive).
+    - This function will only be called after all scheduling is complete
+		(all jobs that have arrived will have finished and no new jobs will arrive).
   @return the average waiting time of all jobs scheduled.
  */
 float scheduler_average_waiting_time()
