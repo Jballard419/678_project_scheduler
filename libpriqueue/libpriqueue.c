@@ -59,6 +59,7 @@ int priqueue_offer(priqueue_t *q, void *ptr)
 		oldnode ->lower_node = newnode;
 	}
 	newnode->lower_node = tempnode;
+		q->size++;
 	return i;
 }
 
@@ -140,12 +141,14 @@ int priqueue_remove(priqueue_t *q, void *ptr)
 	struct node_t *oldnode=NULL;
 	int removed=0;
 	while (tempnode!=NULL) {
-		if(q->comparer(q->frontnode->value, ptr)==0)
+		if(q->comparer(tempnode->value, ptr)==0)
 		{
-			q->frontnode=q->frontnode->lower_node;
+			q->frontnode=tempnode->lower_node;
 //			free(tempnode->value);
-//			free(tempnode);
+			free(tempnode);
 			removed ++;
+			tempnode=q->frontnode;
+
 
 
 		}else
@@ -229,17 +232,17 @@ int priqueue_size(priqueue_t *q)
  */
 void priqueue_destroy(priqueue_t *q)
 {
-	struct node_t *tempnode = q->frontnode;
-	while (tempnode!=NULL) {
+	struct node_t *temp = q->frontnode;
+  struct node_t *oldnode;
+  while (temp!=NULL) {
 
-			q->frontnode=tempnode->lower_node;
-	//		free(tempnode->value);
-			free(tempnode);
-			struct node_t *tempnode = q->frontnode;
+			oldnode=temp;
+      temp=oldnode->lower_node;
+			free(oldnode);
 
-		}
+    }
+
 	//free(q->comparer) :maybe ?
-	free(q);
 
 	return;
 }
