@@ -128,7 +128,7 @@ void scheduler_start_up(int cores, scheme_t scheme)
 	// helper funiction to make a job
 job_t* init_job(int job_number, int time, int running_time, int priority)
 {
-	job_t newjob*= malloc(sizeof(job_t));
+	job_t *newjob= malloc(sizeof(job_t));
 	newjob->job_id=job_number;
 	newjob->sent_time=time;
 	newjob->run_time=running_time;
@@ -136,7 +136,7 @@ job_t* init_job(int job_number, int time, int running_time, int priority)
 	newjob->wait_time= 0;
 	newjob -> end_time=-1;
 	newjob -> rrindex =0;
-	return newjob
+	return newjob;
 
 
 }
@@ -150,7 +150,7 @@ int findcore_id(){
 		 smallest_core = core_id;
 		 break;
 	 }
-	 if(priqueue_size(&queues[core_id]) < priqueue_size[smallest_core])
+	 if(priqueue_size(&queues[core_id]) < priqueue_size([smallest_core]))
 		 smallest_core= core_id;
 	 core_id++;
  }
@@ -181,8 +181,8 @@ int findcore_id(){
 
  int scheduler_new_job(int job_number, int time, int running_time, int priority)
 {
-	job_t newjob*= init_job(job_number,time,running_time,priority);
-	core_id=findcore_id(); // based on size
+	job_t *newjob= init_job(job_number,time,running_time,priority);
+	int core_id=findcore_id(); // based on size
 	priqueue_offer( queues[core_id], newjob);
 
 	// offer to correct queue
