@@ -22,6 +22,7 @@ typedef struct _job_t
   int wait_time;
   int run_time;
   int priority;
+	int rrindex;
 
 } job_t;
 
@@ -31,7 +32,7 @@ int fcfs(const void * a, const void * b)
   job_t job2 = *((job_t *)b);
 
 	return ( job1.sent_time -  job2.sent_time );
-  return 0; //modify for run time
+
 }
 int sjf(const void * a, const void * b)
 {
@@ -61,6 +62,10 @@ int ppri(const void * a, const void * b)
 }
 int rr(const void * a, const void * b)
 {
+	job_t job1 = *((job_t *)a);
+  job_t job2 = *((job_t *)b);
+	if job1.rrindex == job2.rrindex;
+		return ( job1.rrindex - job2.rrindex );
 	return ( *(int*)a - *(int*)b ); //modify for run time
 }
 
