@@ -25,7 +25,7 @@ typedef struct _job_t
 	int rrindex ;
 
 } job_t;
-
+priqueue_t* queues;
 int fcfs(const void * a, const void * b)
 {
 
@@ -69,7 +69,7 @@ int ppri(const void * a, const void * b)
   job_t job2 = *((job_t *)b);
 	if (job1.job_id == job2.job_id)
 		return 0;
-	return ( *(int*)a - *(int*)b ); //modify for run time
+	return ( job1.priority -  job2.priority );//modify for run time
 }
 int rr(const void * a, const void * b)
 {
@@ -81,7 +81,27 @@ int rr(const void * a, const void * b)
 		return ( job1.rrindex - job2.rrindex );
 	return ( *(int*)a - *(int*)b ); //modify for run time
 }
+ priqueue_t make_prique(scheme_t type)
+ {
+	 priqueue_t newqueue;
+	 switch (type) {
+		case SJF:
+		priqueue_init(&newqueue, sjf);
+		case PSJF:
+		priqueue_init(&newqueue, psjf);
+		case PRI:
+		priqueue_init(&newqueue, pri);
+		case PPRI:
+		priqueue_init(&newqueue, pri);
+		case RR:
+		priqueue_init(&newqueue, rr);
+		default: //FCFS
+		priqueue_init(&newqueue, fcfs);
 
+	 }
+	 return newqueue;
+
+ }
 
 /**
   Initalizes the scheduler.
@@ -98,10 +118,11 @@ int rr(const void * a, const void * b)
 void scheduler_start_up(int cores, scheme_t scheme)
 {
   priqueue_t queues[cores];
+	core_num = cores -1 ;
   for (int i = 0; i < cores; i++) {
-    // build the queues
+    queues[i]=make_prique(scheme);
   }
-
+	//set equal to glabal queue
 
 }
 	// helper funiction to make a job
@@ -118,6 +139,22 @@ job_t* init_job(int job_number, int time, int running_time, int priority)
 	return newjob
 
 
+}
+int findcore_id(){
+ int core_id, smallest_core= 0;
+ int runnext =-1;
+ while(core_id<core_num) //TODO: firgure out what to do with core_num and queues
+ {
+	 if(priqueue_size(&queues[core_id])== 0)
+	 {
+		 smallest_core = core_id;
+		 break;
+	 }
+	 if(priqueue_size(&queues[core_id]) < priqueue_size[smallest_core])
+		 smallest_core= core_id;
+	 core_id++;
+ }
+ return smallest_core;
 }
 /**
   Called when a new job arrives.
@@ -136,18 +173,20 @@ job_t* init_job(int job_number, int time, int running_time, int priority)
   @param running_time the total number of time units this job will run before it will be finished.
   @param priority the priority of the job. (The lower the value, the higher the priority.)
   @return index of core job should be scheduled on
-  @return -1 if no scheduling changes should be made.
+  @return -1 if no scheduling changes should be made. TODO firgure out this
 
  */
+
 
 
  int scheduler_new_job(int job_number, int time, int running_time, int priority)
 {
 	job_t newjob*= init_job(job_number,time,running_time,priority);
+	core_id=findcore_id(); // based on size
+	priqueue_offer( queues[core_id], newjob);
 
-	//decided which core
 	// offer to correct queue
-	return -1;
+	return core_id;
 }
 
 
@@ -167,11 +206,24 @@ job_t* init_job(int job_number, int time, int running_time, int priority)
  */
 int scheduler_job_finished(int core_id, int job_number, int time)
 {
-	//pop from job
-	//free job
+	job_t *test= priqueue_peek(queues[core_id]);
+	int size = priqueue_size[queues[core_id]];
+	int i= 0;
+	while (i<size){
+			test = priqueue_at(queues[core_id], i);
+			if(test->job_id == job_number)
+			{
+				priqueue_remove_at(queues[core_id], i)
+				free(test);
+				break;
+			}
+		i++;
+	}
+	test= priqueue_peek(queues[core_id]);
+
 	//peek at top get job_id
 	// return job_id of front
-	return -1;
+	returntest->job_id ;
 }
 
 
