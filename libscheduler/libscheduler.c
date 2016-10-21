@@ -64,7 +64,7 @@ int rr(const void * a, const void * b)
 {
 	job_t job1 = *((job_t *)a);
   job_t job2 = *((job_t *)b);
-	if job1.rrindex == job2.rrindex;
+	if (job1.rrindex == job2.rrindex)
 		return ( job1.rrindex - job2.rrindex );
 	return ( *(int*)a - *(int*)b ); //modify for run time
 }
