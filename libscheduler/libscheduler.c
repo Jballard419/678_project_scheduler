@@ -25,7 +25,7 @@ typedef struct _job_t
 	int rrindex ;
 
 } job_t;
-priqueue_t* queues;
+priqueue_t queues[];
 int fcfs(const void * a, const void * b)
 {
 
@@ -150,7 +150,7 @@ int findcore_id(){
 		 smallest_core = core_id;
 		 break;
 	 }
-	 if(priqueue_size(&queues[core_id]) < priqueue_size([smallest_core]))
+	 if(priqueue_size(&queues[core_id]) < priqueue_size(&queues[smallest_core]))
 		 smallest_core= core_id;
 	 core_id++;
  }
@@ -206,20 +206,21 @@ int findcore_id(){
  */
 int scheduler_job_finished(int core_id, int job_number, int time)
 {
-	job_t *test= priqueue_peek(queues[core_id]);
-	int size = priqueue_size[queues[core_id]];
+	job_t *test= priqueue_peek(&queues[core_id]);
+	int size = priqueue_size(&queues[core_id]);
 	int i= 0;
 	while (i<size){
-			test = priqueue_at(queues[core_id], i);
+			test = priqueue_at(&queues[core_id], i);
 			if(test->job_id == job_number)
 			{
-				priqueue_remove_at(queues[core_id], i)
+				priqueue_remove_at(&queues[core_id], i)
 				free(test);
 				break;
 			}
 		i++;
 	}
-	test= priqueue_peek(queues[core_id]);
+
+	test= priqueue_peek(&queues[core_id]);
 
 	//peek at top get job_id
 	// return job_id of front
