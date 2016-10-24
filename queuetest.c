@@ -51,8 +51,8 @@ int main()
 	printf("Total elements: %d (expected 2).\n", priqueue_size(&q));
 
 	priqueue_offer(&q, &values[10]);
-//	priqueue_offer(&q, &values[30]);
-//	priqueue_offer(&q, &values[20]);
+	priqueue_offer(&q, &values[30]);
+	priqueue_offer(&q, &values[20]);
 
 	priqueue_offer(&q2, &values[10]);
 	priqueue_offer(&q2, &values[30]);

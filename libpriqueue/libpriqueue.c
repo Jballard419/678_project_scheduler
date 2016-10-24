@@ -208,7 +208,7 @@ void *priqueue_remove_at(priqueue_t *q, int index)
 		q->frontnode=tempnode -> lower_node;
 	}
 		free(tempnode);
-
+	q->size --;
 	return temp_value;
 }
 
