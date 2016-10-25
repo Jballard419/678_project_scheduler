@@ -29,7 +29,7 @@ struct scheduler {
   priqueue_t *queues;
   scheme_t Type;
   int core_num;
-  int job_num;
+  int job_nums;
   int total_wait;
   int total_respones;
   int total_turn_around;
@@ -143,7 +143,7 @@ void init_scheduler(struct scheduler *s, int cores, scheme_t scheme )
   for (int i = 0; i < cores; i++) {
     s->queues[i]=make_prique(scheme);
   }
-  s->job_num=0;
+  s->job_nums=0;
   s->total_wait=0;
   s->total_respones=0;
   s->total_turn_around=0;
@@ -162,14 +162,14 @@ void scheduler_start_up(int cores, scheme_t scheme)
 
 }
 	// helper funiction to make a job
-job_t* init_job(int job_number, int time, int running_time, int priority, int rrindex)
+job_t* init_job(int job_number, int time, int running_time, int priority,int wait_time, int rrindex)
 {
 	job_t *newjob= malloc(sizeof(job_t));
 	newjob->job_id=job_number;
 	newjob->sent_time=time;
 	newjob->run_time=running_time;
 	newjob->priority= priority;
-	newjob->wait_time= 0;
+	newjob->wait_time= wait_time;
 	newjob -> start_time=0;
 	newjob -> rrindex =rrindex;
 	return newjob;
@@ -277,7 +277,8 @@ if(smallest_core < 0)
   */
 int scheduler_new_job(int job_number, int time, int running_time, int priority)
 {
-	job_t *newjob= init_job(job_number,time,running_time,priority, 0);
+	job_t *newjob= init_job(job_number,time,running_time,priority, 0, 0);
+  s.job_nums++;
   int core_id;
 	if (!(s.Type == PPRI)){
      core_id=findcore_id(time);
@@ -289,6 +290,7 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
   // TODO:  make this work for ppri a running variable
   if(test_size == 0)
   {
+    newjob-> start_time = time;
     priqueue_offer( &s.queues[core_id], newjob);
     //TODO this only works for FCFS
     s.running_jobs[core_id]= newjob;
@@ -298,6 +300,7 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
   if(s.Type == PPRI && newjob->priority <temp_job.priority){
    job_t *temp = priqueue_poll(&s.queues[core_id]);
     temp->run_time = temp->run_time -(time - temp->sent_time - temp->wait_time);
+    newjob-> start_time = time;
     priqueue_offer( &s.queues[core_id], newjob);
     scheduler_new_job(temp->job_id, time,temp->run_time, temp->priority);
     free(temp);
@@ -339,7 +342,8 @@ int scheduler_job_finished(int core_id, int job_number, int time)
           if((test->sent_time + test-> run_time + test-> wait_time) <=time)
           {
     				priqueue_remove_at(&s.queues[core_id], i);
-    				free(test);
+            s.total_wait= s.total_wait + test->wait_time;
+            free(test);
     				break;
           }
           return -1;
@@ -355,7 +359,8 @@ int scheduler_job_finished(int core_id, int job_number, int time)
     return -1;
 
 
-  test->wait_time= time - test->sent_time;
+  test->wait_time= test->wait_time +time - test->sent_time;
+  test->start_time=time;
 	return test->job_id;
 }
 
@@ -394,7 +399,7 @@ int scheduler_quantum_expired(int core_id, int time)
  */
 float scheduler_average_waiting_time()
 {
-	return 0.0;
+	return (float)s.total_wait/ (float)s.job_nums;
 }
 
 
