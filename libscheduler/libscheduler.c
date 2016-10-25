@@ -46,7 +46,14 @@ int sjf(const void * a, const void * b)
 		return 0;
 	return ( job1.run_time -  job2.run_time );
 }
-
+int pri(const void * a, const void * b)
+{
+  job_t job1 = *((job_t *)a);
+  job_t job2 = *((job_t *)b);
+	if (job1.job_id == job2.job_id)
+		return 0;
+	return ( job1.priority -  job2.priority );
+}
 int psjf(const void * a, const void * b)
 {
   job_t job1 = *((job_t *)a);
@@ -57,21 +64,14 @@ int psjf(const void * a, const void * b)
 	 return ( job1.priority -  job2.priority );
   return ( job1.run_time -  job2.run_time );
 }
-int pri(const void * a, const void * b)
-{
-  job_t job1 = *((job_t *)a);
-  job_t job2 = *((job_t *)b);
-	if (job1.job_id == job2.job_id)
-		return 0;
-	return ( job2.priority -  job1.priority );
-}
+
 int ppri(const void * a, const void * b)
 {
 	job_t job1 = *((job_t *)a);
   job_t job2 = *((job_t *)b);
 	if (job1.job_id == job2.job_id)
 		return 0;
-	return ( job2.priority -  job1.priority );//modify for run time
+	return ( job1.priority -  job2.priority );//modify for run time
 }
 int rr(const void * a, const void * b)
 {
@@ -89,17 +89,24 @@ int rr(const void * a, const void * b)
 	 switch (type) {
 		case SJF:
 		priqueue_init(&newqueue, sjf);
+    break;
 		case PSJF:
-		priqueue_init(&newqueue, psjf);
+    ppri_flag=1;
+		priqueue_init(&newqueue, sjf);
+    break;
 		case PRI:
 		priqueue_init(&newqueue, pri);
+    break;
 		case PPRI:
     ppri_flag=1;
 		priqueue_init(&newqueue, pri);
+    break;
 		case RR:
 		priqueue_init(&newqueue, rr);
+    break;
 		default: //FCFS
 		priqueue_init(&newqueue, fcfs);
+    break;
 
 	 }
 	 return newqueue;
@@ -145,7 +152,7 @@ job_t* init_job(int job_number, int time, int running_time, int priority)
 
 
 }
-int findcore_id(){
+int findcore_id(int time){
  int core_id = 0;
  int smallest_core= 0;
  int runnext =-1;
@@ -156,10 +163,51 @@ int findcore_id(){
 		 smallest_core = core_id;
 		 break;
 	 }
-	 if(priqueue_size(&queues[core_id]) < priqueue_size(&queues[smallest_core]))
+	 if(queues[core_id].current_wait_time  < queues[smallest_core].current_wait_time)
 		 smallest_core= core_id;
 	 core_id++;
  }
+ return smallest_core;
+}
+
+
+int findcore_id_prioty(int time, int priority){
+ int core_id = 0;
+ int smallest_core= -1;
+ job_t temp_job;
+ int smallest_index=priqueue_size(&queues[0]);
+ for(int j =0; j<priqueue_size(&queues[0]); j++)
+ {
+  temp_job= *(job_t *)priqueue_at(&queues[0],j);
+   if(priority< temp_job.priority)
+   {
+     smallest_core= 0;
+     smallest_index = j;
+     break;
+   }
+ }
+ int runnext =-1;
+ for (int i = 1; i < core_num; i++)
+{
+   for(int j =0; j<priqueue_size(&queues[i]); j++)
+   {
+     temp_job= *(job_t *)priqueue_at(&queues[0],j);
+     if(priority< temp_job.priority)
+     {
+       if(j< smallest_index)
+       {
+         smallest_index= j;
+         smallest_core = i;
+       }
+       break;
+     }
+
+   }
+   if(smallest_index == 0)
+    break;
+ }
+if(smallest_core < 0)
+  smallest_core= findcore_id(time);
  return smallest_core;
 }
 /**
@@ -176,34 +224,44 @@ int findcore_id(){
 
   @param job_number a globally unique identification number of the job arriving.
   @param time the current time of the simulator.
-  @param running_time the total number of time units this job will run before it will be finished.
-  @param priority the priority of the job. (The lower the value, the higher the priority.)
-  @return index of core job should be scheduled on
-  @return -1 if no scheduling changes should be made. TODO firgure out this
-
- */
-
-
-
- int scheduler_new_job(int job_number, int time, int running_time, int priority)
+  @param runninP_IP, UDP_PORT))
+  */
+int scheduler_new_job(int job_number, int time, int running_time, int priority)
 {
 	job_t *newjob= init_job(job_number,time,running_time,priority);
-	int core_id=findcore_id(); // based on size
+  int core_id;
+	if (!ppri_flag){
+     core_id=findcore_id(time);
+  }else
+  {
+     core_id=findcore_id_prioty(time, priority);
+  }// based on size
 	int test_size = priqueue_size(&queues[core_id]); // in theory should running job
   // TODO:  make this work for ppri a running variable
-  priqueue_offer( &queues[core_id], newjob);
-
-  if(ppri_flag && newjob == priqueue_peek(&queues[core_id]))
-	 return core_id;
-
-  // offer to correct queue
-	if(test_size == 0)
+  if(test_size == 0)
+  {
+    priqueue_offer( &queues[core_id], newjob);
+    queues[core_id].current_wait_time=newjob->run_time + time; //TODO this only works for FCFS
     return core_id;
+  }
+  job_t temp_job =*(job_t *)priqueue_peek(&queues[core_id]);
+  if(ppri_flag && newjob->priority <temp_job.priority){
+   job_t *temp = priqueue_poll(&queues[core_id]);
+    temp->run_time = temp->run_time -(time - temp->sent_time - temp->wait_time);
+    priqueue_offer( &queues[core_id], newjob);
+    scheduler_new_job(temp->job_id, time,temp->run_time, temp->priority);
+    free(temp);
+   return core_id;
+ }
+  priqueue_offer( &queues[core_id], newjob);
+  // offer to correct queue
+
+  queues[core_id].current_wait_time=newjob->run_time + queues[core_id].current_wait_time; //TODO: ppri
   return -1;
 }
 
 
-/**
+/*
   Called when a job has completed execution.
 
   The core_id, job_number and time parameters are provided for convenience.
