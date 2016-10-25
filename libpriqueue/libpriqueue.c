@@ -22,9 +22,8 @@ void priqueue_init(priqueue_t *q, int(*comparer)(const void *, const void *))
 	q->size=0;
 	q->comparer=comparer;
 	q->frontnode = NULL;
-	q->current_wait_time = 0;
-	q->overall_wait_time= 0;
-	q->total_added=0;
+	
+
 }
 
 
@@ -46,7 +45,7 @@ int priqueue_offer(priqueue_t *q, void *ptr)
 	struct node_t *oldnode = NULL;
 	if(q->frontnode==NULL ){
 		q->size=1;
-		q->total_added++;
+
 		q->frontnode=newnode;
 		return 0;
 	}
@@ -64,7 +63,7 @@ int priqueue_offer(priqueue_t *q, void *ptr)
 	}
 	newnode->lower_node = tempnode;
 		q->size++;
-		q->total_added++;
+
 	return i;
 }
 
