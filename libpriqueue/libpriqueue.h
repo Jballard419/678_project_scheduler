@@ -21,6 +21,10 @@ typedef struct _priqueue_t
   struct node_t  *frontnode;
   int size;
   int (*comparer)(const void *, const void *);
+  // extra stuff for jobs use inheriats 
+  int current_wait_time; //used to detrimine what core is free
+  int overall_wait_time; //this is going to help with average time
+  int total_added; //doesn't go down TODO inheriater these extra variable
 } priqueue_t;
 
 

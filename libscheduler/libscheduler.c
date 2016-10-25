@@ -35,7 +35,7 @@ int fcfs(const void * a, const void * b)
   job_t job2 = *((job_t *)b);
 	if (job1.job_id == job2.job_id)
 		return 0;
-	return ( job2.sent_time -  job1.sent_time );
+	return ( job1.sent_time -  job2.sent_time );
 
 }
 int sjf(const void * a, const void * b)
@@ -146,7 +146,7 @@ job_t* init_job(int job_number, int time, int running_time, int priority)
 
 }
 int findcore_id(){
- int core_id = 0; 
+ int core_id = 0;
  int smallest_core= 0;
  int runnext =-1;
  while(core_id<core_num)
@@ -198,7 +198,7 @@ int findcore_id(){
 
   // offer to correct queue
 	if(test_size == 0)
-  return core_id;
+    return core_id;
   return -1;
 }
 
