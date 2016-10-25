@@ -80,8 +80,10 @@ int rr(const void * a, const void * b)
 	if (job1.job_id == job2.job_id)
 		return 0;
 	if (job1.rrindex == job2.rrindex)
-		return ( job1.rrindex - job2.rrindex );
-	return ( *(int*)a - *(int*)b ); //modify for run time
+    return 0;
+  if(job1.rrindex > job2.rrindex)
+    return ( job1.rrindex - job2.rrindex );
+  return ( job2.rrindex - job1.rrindex );
 }
  priqueue_t make_prique(scheme_t type)
  {
@@ -323,12 +325,20 @@ int scheduler_job_finished(int core_id, int job_number, int time)
  */
 int scheduler_quantum_expired(int core_id, int time)
 {
-	//job = pop
-	//job round robin index +1
-	//might want t
-	//offer job back to the queue
-	return -1;
+  //get the first element from the queue
+  job_t *j= priqueue_poll(&queues[core_id]);
+  //if there are no more elements in the queue just return -1 and continue until current process is done
+  j->rrindex+=1;
+  j->wait_time= j->wait_time+ j->start_time - j->send_time;
+  j->send_time = time;
+	priqueue_offer(&queues[core_id], j);
 
+  if(priqueue_size(&queues[core_id]) == 1)
+    return -1;
+  //look at the next element
+  job_t *temp = priqueue_peek(&queues[core_id]);
+
+  return (temp->job_id);
 }
 
 
