@@ -179,6 +179,7 @@ job_t* init_job(int job_number, int time, int running_time, int priority,int wai
 
 int get_current_wait_timeto(priqueue_t* q, int end_index, job_t* running_job, int time)
 {
+
   int time_left=running_job->run_time - (time - running_job->start_time);
   job_t temp;
   int i=0;
@@ -200,6 +201,8 @@ int findcore_id(int time){
  int smallest_core= 0;
  int runnext =-1;
  int current_wait_time=0;
+ if(priqueue_size(&s.queues[0]) == 0)
+  return 0;
  int smallest_wait_time = get_current_wait_timeto(&s.queues[0], priqueue_size(&s.queues[0]),s.running_jobs[0], time);
  while(core_id<s.core_num)
  {
@@ -297,9 +300,10 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
     return core_id;
   }
   job_t temp_job =*(job_t *)priqueue_peek(&s.queues[core_id]);
-  if(s.Type == PPRI && newjob->priority <temp_job.priority){
+  int test_time= temp_job.run_time - (time -temp_job.start_time);
+  if((s.Type == PPRI && newjob->priority <temp_job.priority) ||(s.Type == PSJF && newjob->run_time <test_time) ){
    job_t *temp = priqueue_poll(&s.queues[core_id]);
-    temp->run_time = temp->run_time -(time - temp->sent_time - temp->wait_time);
+    temp->run_time = test_time;
     newjob-> start_time = time;
     priqueue_offer( &s.queues[core_id], newjob);
     scheduler_new_job(temp->job_id, time,temp->run_time, temp->priority);
@@ -342,7 +346,10 @@ int scheduler_job_finished(int core_id, int job_number, int time)
           if((test->sent_time + test-> run_time + test-> wait_time) <=time)
           {
     				priqueue_remove_at(&s.queues[core_id], i);
+            if(test->rrindex == 0)
+              s.total_respones= s.total_respones + test->wait_time;
             s.total_wait= s.total_wait + test->wait_time;
+            s.total_turn_around= s.total_turn_around + (time - test->sent_time);
             free(test);
     				break;
           }
@@ -412,6 +419,7 @@ float scheduler_average_waiting_time()
  */
 float scheduler_average_turnaround_time()
 {
+  return (float)s.total_turn_around/ (float)s.job_nums;
 	return 0.0;
 }
 
@@ -425,7 +433,8 @@ float scheduler_average_turnaround_time()
  */
 float scheduler_average_response_time()
 {
-	return 0.0;
+  return (float)s.total_respones/ (float)s.job_nums;
+
 }
 
 
