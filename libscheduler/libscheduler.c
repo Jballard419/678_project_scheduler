@@ -336,8 +336,17 @@ int scheduler_job(int job_number, int time, int running_time, int priority, int 
 }
 int scheduler_new_job(int job_number, int time, int running_time, int priority)
 {
+  //TODO::set up for multi cores
+  int check =0;
+  if(s.Type == RR){
+    job_t *temp = priqueue_peek(&s.queues[0]);
+    if(temp!= NULL  && priqueue_size(&s.queues[0])> 1)
+      check = (temp->rrindex) + 1;
+    if (priqueue_size(&s.queues[0])== 1)
+      check = (temp->rrindex);
+  }
   s.job_nums++;
-  return scheduler_job(job_number,time,running_time,priority, 0, 0);
+  return scheduler_job(job_number,time,running_time,priority, 0, check);
 }
 
 
@@ -426,17 +435,14 @@ int scheduler_quantum_expired(int core_id, int time)
   }
 
   j=priqueue_remove_at(&s.queues[core_id], index);
-  // priqueue_poll(&s.queues[core_id]);
-  //if there are no more elements in the queue just return -1 and continue until current process is done
+
   j->rrindex ++;
   j->wait_time= j->wait_time + j->start_time - j->sent_time;
-  //j->sent_time = time;
+  j->sent_time = time;
   j->start_time= 0;
   j->run_time= j->run_time - (time - j->start_time);
 	priqueue_offer(&s.queues[core_id], j);
 
-  // if(priqueue_size(&s.queues[core_id]) == 1)
-  //   return j->job_id;
   //look at the next element
   job_t *temp = priqueue_peek(&s.queues[core_id]);
   s.running_jobs[core_id]= temp;
