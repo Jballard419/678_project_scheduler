@@ -23,6 +23,7 @@ typedef struct _job_t
   int run_time;
   int priority;
 	int rrindex ;
+  int has_run;
 
 } job_t;
 struct scheduler {
@@ -31,7 +32,7 @@ struct scheduler {
   int core_num;
   int job_nums;
   int total_wait;
-  int total_respones;
+  int total_responses;
   int total_turn_around;
   job_t **running_jobs;  // pointers to job inside q that are running
 
@@ -88,10 +89,10 @@ int rr(const void * a, const void * b)
   job_t job2 = *((job_t *)b);
 	if (job1.job_id == job2.job_id)
 		return 0;
-	if (job1.rrindex == job2.rrindex)
-      return 0;
-	return ( job1.rrindex - job2.rrindex );
-	 //modify for run time
+   if(job1.rrindex != job2.rrindex)
+    return ( job1.rrindex - job2.rrindex );
+  return ( job1.sent_time -  job2.sent_time );
+  // return ( job2.rrindex - job1.rrindex );
 }
  priqueue_t make_prique(scheme_t type)
  {
@@ -145,7 +146,7 @@ void init_scheduler(struct scheduler *s, int cores, scheme_t scheme )
   }
   s->job_nums=0;
   s->total_wait=0;
-  s->total_respones=0;
+  s->total_responses=0;
   s->total_turn_around=0;
   s->Type= scheme;
 
@@ -162,7 +163,7 @@ void scheduler_start_up(int cores, scheme_t scheme)
 
 }
 	// helper funiction to make a job
-job_t* init_job(int job_number, int time, int running_time, int priority,int wait_time, int rrindex)
+job_t* init_job(int job_number, int time, int running_time, int priority,int wait_time, int rrindex, int has_run)
 {
 	job_t *newjob= malloc(sizeof(job_t));
 	newjob->job_id=job_number;
@@ -172,6 +173,7 @@ job_t* init_job(int job_number, int time, int running_time, int priority,int wai
 	newjob->wait_time= wait_time;
 	newjob -> start_time=0;
 	newjob -> rrindex =rrindex;
+  newjob -> has_run = has_run;
 	return newjob;
 
 
@@ -285,10 +287,10 @@ if(smallest_core < 0)
   @param time the current time of the simulator.
   @param runninP_IP, UDP_PORT))
   */
-int scheduler_job(int job_number, int time, int running_time, int priority, int wait_time, int rrindex)
+int scheduler_job(int job_number, int time, int running_time, int priority, int wait_time, int rrindex, int has_run)
 {
 
-	job_t *newjob= init_job(job_number,time,running_time,priority, wait_time, rrindex);
+	job_t *newjob= init_job(job_number,time,running_time,priority, wait_time, rrindex, has_run);
 
   int core_id;
 	if (!(s.Type == PPRI)){
@@ -320,16 +322,16 @@ int scheduler_job(int job_number, int time, int running_time, int priority, int 
     temp->wait_time=temp->start_time - temp->sent_time;
 
     if(temp->rrindex == 0 ){
-      s.total_respones= s.total_respones + temp->wait_time;
+      s.total_responses= s.total_responses + temp->wait_time;
     }
     s.total_wait= s.total_wait + temp->wait_time;
     s.total_turn_around= s.total_turn_around + (time - temp->sent_time);
     if(temp->start_time == time)
     {
-    scheduler_job(temp->job_id, time,temp->run_time, temp->priority, 0, (temp->rrindex));
+    scheduler_job(temp->job_id, time,temp->run_time, temp->priority, 0, (temp->rrindex), 0);
     }
     else{
-      scheduler_job(temp->job_id, time,temp->run_time, temp->priority, 0, (temp->rrindex+ 1));
+      scheduler_job(temp->job_id, time,temp->run_time, temp->priority, 0, (temp->rrindex+ 1), 1);
     }
     free(temp);
     s.running_jobs[core_id]= newjob;
@@ -343,8 +345,17 @@ int scheduler_job(int job_number, int time, int running_time, int priority, int 
 }
 int scheduler_new_job(int job_number, int time, int running_time, int priority)
 {
+  //TODO::set up for multi cores
+  int check =0;
+  if(s.Type == RR){
+    job_t *temp = priqueue_peek(&s.queues[0]);
+    if(temp!= NULL  && priqueue_size(&s.queues[0])> 1)
+      check = (temp->rrindex) + 1;
+    if (priqueue_size(&s.queues[0])== 1)
+      check = (temp->rrindex);
+  }
   s.job_nums++;
-  return scheduler_job(job_number,time,running_time,priority, 0, 0);
+  return scheduler_job(job_number,time,running_time,priority, 0, check, 0);
 }
 
 
@@ -377,7 +388,7 @@ int scheduler_job_finished(int core_id, int job_number, int time)
     				test = priqueue_remove_at(&s.queues[core_id], i);
             if(test->rrindex == 0){
               //printf("Job_id:%d wait_time; %d", test->job_id, test->wait_time );
-              s.total_respones= s.total_respones + test->wait_time;
+              s.total_responses= s.total_responses + test->wait_time;
             }
             s.total_wait= s.total_wait + test->wait_time;
             s.total_turn_around= s.total_turn_around + (time - test->sent_time);
@@ -418,12 +429,38 @@ int scheduler_job_finished(int core_id, int job_number, int time)
  */
 int scheduler_quantum_expired(int core_id, int time)
 {
-	//job = pop
-	//job round robin index +1
-	//might want t
-	//offer job back to the queue
-	return -1;
+  //get the first element from the queue
+  job_t *j= s.running_jobs[core_id];
+  if(priqueue_size(&s.queues[core_id]) == 1){
+    // j->start_time = time;
+    return j->job_id;
+  }
+  int index;
+  for(int i = 0; i < priqueue_size(&s.queues[core_id]); i++){
+    job_t *temp = priqueue_at(&s.queues[core_id], i);
+    if(temp->job_id == j->job_id){
+      index = i;
+      break;
+    }
+  }
 
+  j=priqueue_remove_at(&s.queues[core_id], index);
+  if(!j-> has_run){
+    s.total_responses += j->wait_time;
+  }
+  j->rrindex ++;
+  j->wait_time= j->wait_time + j->start_time - j->sent_time;
+  j->sent_time = time;
+  j->start_time= 0;
+  j->run_time= j->run_time - (time - j->start_time);
+	priqueue_offer(&s.queues[core_id], j);
+
+  //look at the next element
+  job_t *temp = priqueue_peek(&s.queues[core_id]);
+  temp->start_time =time;
+  temp->has_run = 1;
+  s.running_jobs[core_id]= temp;
+  return (temp->job_id);
 }
 
 
@@ -468,7 +505,7 @@ float scheduler_average_turnaround_time()
 float scheduler_average_response_time()
 {
   //printf("job_nums%d\n",s.job_nums );
-  return (float)s.total_respones/ (float)s.job_nums;
+  return (float)s.total_responses/ (float)s.job_nums;
 
 }
 
@@ -504,5 +541,9 @@ void scheduler_clean_up()
  */
 void scheduler_show_queue()
 {
-
+  for(int j =0; j <s.core_num; j++)
+    for(int i=0; i<priqueue_size(&s.queues[j]); i++){
+      job_t* temp = priqueue_at(&s.queues[j],i);
+      printf("%d ", temp->job_id);
+    }
 }
