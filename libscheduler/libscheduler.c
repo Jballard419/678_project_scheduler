@@ -188,7 +188,8 @@ int get_current_wait_timeto(priqueue_t* q, int end_index, job_t* running_job, in
     if(priqueue_at(q, i)!= NULL)
     {
       temp=*(job_t *)priqueue_at(q, i);
-      time_left= time_left + temp.run_time;
+      if(running_job->job_id != temp.job_id)
+        time_left= time_left + temp.run_time;
     }
     i++;
   }
@@ -212,7 +213,10 @@ int findcore_id(int time){
 		 break;
 	 }
    current_wait_time = get_current_wait_timeto(&s.queues[core_id], priqueue_size(&s.queues[core_id]),s.running_jobs[core_id], time);
-	 if(current_wait_time < smallest_wait_time)
+   int diff=0;
+  
+
+	 if(current_wait_time < smallest_wait_time+diff)
    {
 		 smallest_core= core_id;
      smallest_wait_time=current_wait_time;
@@ -221,6 +225,7 @@ int findcore_id(int time){
  }
  return smallest_core;
 }
+
 
 
 int findcore_id_prioty(int time, int priority){
@@ -382,7 +387,7 @@ int scheduler_job_finished(int core_id, int job_number, int time)
 		i++;
 	}
 
-  test= priqueue_peek(&s.queues[core_id]);
+  test= (job_t *)priqueue_peek(&s.queues[core_id]);
   s.running_jobs[core_id]= test;
 	//peek at top get job_id
 	// return job_id of front
