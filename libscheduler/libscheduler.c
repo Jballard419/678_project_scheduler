@@ -27,7 +27,7 @@ typedef struct _job_t
 
 } job_t;
 struct scheduler {
-  priqueue_t *queues;
+  priqueue_t queue;
   scheme_t Type;
   int core_num;
   int job_nums;
@@ -138,12 +138,11 @@ int rr(const void * a, const void * b)
 */
 void init_scheduler(struct scheduler *s, int cores, scheme_t scheme )
 {
-  s->queues =  malloc(cores * sizeof(priqueue_t));
+  s->queue =  malloc( sizeof(priqueue_t));
   s->running_jobs = malloc(cores *sizeof(job_t));
 	s->core_num = cores;
-  for (int i = 0; i < cores; i++) {
-    s->queues[i]=make_prique(scheme);
-  }
+    s->queue=make_prique(scheme);
+
   s->job_nums=0;
   s->total_wait=0;
   s->total_responses=0;
@@ -155,7 +154,6 @@ void init_scheduler(struct scheduler *s, int cores, scheme_t scheme )
 }
 void scheduler_start_up(int cores, scheme_t scheme)
 {
-  //priqueue_t queues[cores];
 
   init_scheduler(&s, cores, scheme);
 
@@ -165,7 +163,6 @@ void scheduler_start_up(int cores, scheme_t scheme)
 	// helper funiction to make a job
 job_t* init_job(int job_number, int time, int running_time, int priority,int wait_time, int rrindex, int has_run)
 {
-	job_t *newjob= malloc(sizeof(job_t));
 	newjob->job_id=job_number;
 	newjob->sent_time=time;
 	newjob->run_time=running_time;
@@ -178,128 +175,48 @@ job_t* init_job(int job_number, int time, int running_time, int priority,int wai
 
 
 }
-int findcore_id(job_t* job);
-int get_current_wait_timeto(priqueue_t* q, int end_index, job_t* running_job, int time)
+
+
+int findlowest_core( int time)
 {
+  job_t* temp= s.running_jobs[0];
+  if (temp==NULL)
+    return 0;
+   int longest_rt= temp->run_time -(time - temp->start_time);
+   int rt_core= 0;
+   int rt_temp= longest_rt;
+   int lowest_pri = temp->priority;
+   int pri_core = 0;
 
-  int time_left=0;
-if(running_job == NULL)
-  return 0;
-time_left=running_job->run_time - (time - running_job->start_time);
-
-  job_t temp;
-  int i=0;
-  while(i<end_index)
-  {
-    if(priqueue_at(q, i)!= NULL)
+  for (int i = 1; i < core_num; i++) {
+    temp= s.running_jobs[i];
+    if(s.running_jobs[i] == NULL)
+      return i;
+    rt_temp =temp->run_time -(time - temp->start_time);
+    if(rt_temp>longest_rt)
     {
-      temp=*(job_t *)priqueue_at(q, i);
-      if(running_job->job_id != temp.job_id)
-        time_left= time_left + temp.run_time;
+      rt_core = i;
+      longest_rt = rt_temp;
     }
-    i++;
+    if(temp->priority > lowest_pri)
+    {
+      lowest_pri =temp->priority;
+      pri_core=i;
+    }
+
   }
-  return time_left;
-
-
+  if(s.Type == PPRI)
+    return pri_core;
+  return rt_core;
 }
+int find_empty_core(){
 
-int findcore_id_FCFS(int time){
-
- int core_id = 1;
- int s_core= 0;
- int runnext =-1;
- int current_wait_time=0;
- if(priqueue_size(&s.queues[0]) == 0)
-  return 0;
- int s_wait_time = get_current_wait_timeto(&s.queues[0], priqueue_size(&s.queues[0]),s.running_jobs[0], time);
- while(core_id<s.core_num)
- {
-	 if(priqueue_size(&s.queues[core_id])== 0)
-	 {
-		 s_core = core_id;
-		 break;
-	 }
-   current_wait_time = get_current_wait_timeto(&s.queues[core_id], priqueue_size(&s.queues[core_id]),s.running_jobs[core_id], time);
-   int diff=0;
-   //if(s.running_jobs[core_id]->start_time< s.running_jobs[s_core]->start_time)
-    //diff=s.running_jobs[s_core]->start_time -s.running_jobs[core_id]->start_time;
-    //diff=diff - (-s.running_jobs[s_core]->run_time  -s.running_jobs[core_id]->run_time);
-
-	 if(current_wait_time <= s_wait_time+diff)
-   {
-		 s_core= core_id;
-     s_wait_time=current_wait_time;
-   }
-	 core_id++;
- }
- return s_core;
-
-}
-
-int findcore_id_prioty(int time, int priority){
- int core_id = 0;
- int s_core= 0;
- job_t temp_job;
- int s_wait_time;
- int c_wait_time;
- int s_index=priqueue_size(&s.queues[0]);
- if(s_index==0){
-   return 0;
- }
- for(int j =0; j<priqueue_size(&s.queues[0]); j++)
- {
-  temp_job= *(job_t *)priqueue_at(&s.queues[0],j);
-   if(priority< temp_job.priority)
-   {
-     s_index = j;
-     break;
-   }
- }
- s_wait_time = get_current_wait_timeto(&s.queues[s_core], s_index+1, s.running_jobs[s_core],time);
- int runnext =-1;
- for (int i = 1; i < s.core_num; i++)
-{
-  if(priqueue_size(&s.queues[i])== 0)
+  for(int m=0; m<s.core_num; m++)
   {
-    return i;
+    if(s.running_jobs[m]==NULL)
+      return m;
   }
-   for(int j =0; j<priqueue_size(&s.queues[i]); j++)
-   {
-     job_t* temp_job= (job_t *)priqueue_at(&s.queues[i],j);
-
-     if(temp_job == NULL||priority< temp_job->priority)
-     {
-       c_wait_time = get_current_wait_timeto(&s.queues[i], j, s.running_jobs[i],time);
-       if(c_wait_time< s_wait_time)
-       {
-         s_core= i;
-         s_wait_time = c_wait_time;
-       }
-       break;
-     }
-
-   }
-   if(s_index == 0)
-    break;
- }
-
- return s_core;
-}
-int findcore_id(job_t* job)
-{
-  int core_id;
-  switch (s.Type) {
-    case FCFS:
-      core_id=findcore_id_FCFS(job->sent_time);
-    break;
-    case PRI:
-      core_id=findcore_id_prioty(job->sent_time, job->priority);
-    default:
-    break;
-
-  };
-  return core_id;
+  return -1;
 }
 /**
   Called when a new job arrives.
@@ -322,66 +239,72 @@ int scheduler_job(int job_number, int time, int running_time, int priority, int 
 
 	job_t *newjob= init_job(job_number,time,running_time,priority, wait_time, rrindex, has_run);
 
-  int core_id= 0;
-	if (s.core_num > 1){
-     core_id=findcore_id(newjob);
-  }
-  // based on size
-	int test_size = priqueue_size(&s.queues[core_id]); // in theory should running job
-  // TODO:  make this work for ppri a running variable
-  if(test_size == 0)
+  int core_id=find_empty_core();
+
+
+  if(core_id != -1)
   {
     newjob-> start_time = time;
-    priqueue_offer( &s.queues[core_id], newjob);
-    //TODO this only works for FCFS
     s.running_jobs[core_id]= newjob;
+    priqueue_offer( &s.queue, newjob);
     return core_id;
   }
-  job_t temp_job =*(job_t *)priqueue_peek(&s.queues[core_id]);
-  int test_time= temp_job.run_time - (time -temp_job.start_time);
-  if((s.Type == PPRI && newjob->priority <temp_job.priority) ||(s.Type == PSJF && newjob->run_time <test_time) )
+
+
+
+  priqueue_offer( &s.queue, newjob);
+
+  if((s.Type == PPRI||s.Type == PSJF)  )
   {
+    core_id = findlowest_core(time);
+
     //TODO: make its own funiction
-   job_t *temp = priqueue_poll(&s.queues[core_id]);
-   newjob-> start_time = time;
-   priqueue_offer( &s.queues[core_id], newjob);
+   job_t *test = s.running_jobs[core_id];
+   if(!((s.type == PPRI && newjob->run_time < (test->run_time - time + test->start_time))
+   ||(s.type == PSJF && newjob->priority < test->priority))){
+     return -1;
+   }
 
-    temp->run_time = test_time;
+    newjob-> start_time = time;
+    test->run_time = test_time;
+    test->wait_time=test->start_time - test->sent_time;
 
-    temp->wait_time=temp->start_time - temp->sent_time;
-
-    if(temp->has_run == 0 ){
-      s.total_responses= s.total_responses + temp->wait_time;
+    if(test->has_run == 0 ){
+      s.total_responses= s.total_responses + test->wait_time;
     }
-    s.total_wait= s.total_wait + temp->wait_time;
-    s.total_turn_around= s.total_turn_around + (time - temp->sent_time);
-    if(temp->start_time == time)
+    s.total_wait= s.total_wait + test->wait_time;
+    s.total_turn_around= s.total_turn_around + (time - test->sent_time);
+    if(test->start_time != time)
     {
-    scheduler_job(temp->job_id, time,temp->run_time, temp->priority, 0, (temp->rrindex), 0);
+      test->rrindex+ 1;
+      test->has_run = 1;
     }
-    else{
-      scheduler_job(temp->job_id, time,temp->run_time, temp->priority, 0, (temp->rrindex+ 1), 1);
-    }
-    free(temp);
+    s.wait_time= 0;
     s.running_jobs[core_id]= newjob;
+    if(remove(&s.queue)!=1) // remove it for PSJF, and RR
+    {
+      return -1;
+    }
+    priqueue_offer(&s.queue, test);
    return core_id;
   }
-  priqueue_offer( &s.queues[core_id], newjob);
+
   // offer to correct queue
 
 
-  return -1;
+
 }
 int scheduler_new_job(int job_number, int time, int running_time, int priority)
 {
   //TODO::set up for multi cores
   int check =0;
   if(s.Type == RR){
-    job_t *temp = priqueue_peek(&s.queues[0]);
-    if(temp!= NULL  && priqueue_size(&s.queues[0])> 1)
-      check = (temp->rrindex) + 1;
-    if (priqueue_size(&s.queues[0])== 1)
-      check = (temp->rrindex);
+    // TODO:fix
+    // job_t *test = priqueue_peek(&s.queues[0]);
+    // if(test!= NULL  && priqueue_size(&s.queues[0])> 1)
+    //   check = (test->rrindex) + 1;
+    // if (priqueue_size(&s.queue)== core_num)
+    //   check = (test->rrindex);
   }
   s.job_nums++;
   return scheduler_job(job_number,time,running_time,priority, 0, check, 0);
@@ -403,18 +326,61 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
   @return job_number of the job that should be scheduled to run on core core_id
   @return -1 if core should remain idle.
  */
+ job_t* next_job()
+ {
+    job_t* test;
+   for(int nex_job = 0; next_job< priqueue_size(&s.queue); i++)
+   {
+     test = priqueue_at(&s.queue,nex_job )
+     if(test== NULL)
+     break;
+     for(int i; i< core_num ; i++)
+     {
+       if(s.running_jobs[i]== NULL)
+       {
+
+       }
+       else if(s.running_jobs[i]->job_id == test->job_id)
+       {
+         is_not_running =0;
+         break;
+       }
+
+     }
+     if (is_not_running)
+     break;
+   }
+   return test;
+ }
+int find_index(int job_number)
+{
+  job_t *test;
+  int size = priqueue_size(&s.queue);
+  int i= 0;
+	while (i<size)
+  {
+    test = priqueue_at(&s.queue, i)
+    if(test->job_id == job_number)
+    {
+      return i;
+    }
+  }
+  return -1;
+}
 int scheduler_job_finished(int core_id, int job_number, int time)
 {
-	job_t *test= priqueue_peek(&s.queues[core_id]);
-	int size = priqueue_size(&s.queues[core_id]);
-	int i= 0;
-	while (i<size){
-			test = priqueue_at(&s.queues[core_id], i);
-			if(test->job_id == job_number)
-			{
+	job_t *test= s.running_jobs[core_id];
+
+	int size = priqueue_size(&s.queue);
+	int i= find_index(job_number);
+  if( i == -1)
+    {return i; }
+			test = priqueue_at(&s.queue, i);
+
+
           if((test->sent_time + test-> run_time + test-> wait_time) <=time)
           {
-    				test = priqueue_remove_at(&s.queues[core_id], i);
+    				test = priqueue_remove_at(&s.queue, i);
             if(test->has_run == 0){
               //printf("Job_id:%d wait_time; %d", test->job_id, test->wait_time );
               s.total_responses= s.total_responses + test->wait_time;
@@ -423,15 +389,16 @@ int scheduler_job_finished(int core_id, int job_number, int time)
             s.total_turn_around= s.total_turn_around + (time - test->sent_time);
             free(test);
     				break;
+          }else
+          {
+            return -1;
           }
-          return -1;
-			}
-		i++;
-	}
 
-  test= (job_t *)priqueue_peek(&s.queues[core_id]);
+  int is_not_running = 1;
+  test =nex_job();
   s.running_jobs[core_id]= test;
-	//peek at top get job_id
+
+  //peek at top get job_id
 	// return job_id of front
   if (test == NULL)
     return -1;
@@ -460,10 +427,10 @@ int scheduler_quantum_expired(int core_id, int time)
 {
   //get the first element from the queue
   job_t *j= s.running_jobs[core_id];
-  if(priqueue_size(&s.queues[core_id]) == 1){
+  if(priqueue_size(&s.queue) <= core_num){
     return j->job_id;
   }
-  //int index;
+  int index= find_index(j->job_id);
 
 
     j->wait_time=  j->start_time - j->sent_time;
@@ -472,7 +439,7 @@ int scheduler_quantum_expired(int core_id, int time)
       s.total_responses += j->wait_time;
     }
     j->wait_time =0;// j->start_time = time;
-  j=priqueue_poll(&s.queues[core_id]);
+  j=priqueue_remove_at(&s.queue , index);
 
   s.total_turn_around = s.total_turn_around + (time - j->sent_time);
 
@@ -483,14 +450,14 @@ int scheduler_quantum_expired(int core_id, int time)
   j->start_time= 0;
   j->wait_time=0;
   j->run_time= j->run_time - (time - j->start_time);
-	priqueue_offer(&s.queues[core_id], j);
+	priqueue_offer(&s.queue, j);
 
   //look at the next element
-  job_t *temp = priqueue_peek(&s.queues[core_id]);
-  temp->start_time =time;
-  temp->wait_time=time - temp->sent_time;
-  s.running_jobs[core_id]= temp;
-  return (temp->job_id);
+  job_t *test = next_job();
+  test->start_time =time;
+  test->wait_time=time - test->sent_time;
+  s.running_jobs[core_id]= test;
+  return (test->job_id);
 }
 
 
@@ -548,10 +515,10 @@ float scheduler_average_response_time()
 */
 void scheduler_clean_up()
 {
-    for (int i; i <s.core_num; i++) {
-      priqueue_destroy(&s.queues[i]);
+
+      priqueue_destroy(&s.queue);
       //free(s.running_jobs[i]);
-    }
+
     //free(s.running_jobs);
 
 
@@ -578,11 +545,9 @@ void scheduler_clean_up()
  */
 void scheduler_show_queue()
 {
-  for(int j =0; j <s.core_num; j++){
-  printf("\n queue %d:\n",j );
-    for(int i=0; i<priqueue_size(&s.queues[j]); i++){
-      job_t temp = *(job_t *)priqueue_at(&s.queues[j],i);
-      printf("%d ", temp.job_id);
+
+    for(int i=0; i<priqueue_size(&s.queue); i++){
+      job_t test = *(job_t *)priqueue_at(&s.queue,i);
+      printf("%d ", test.job_id);
     }
-  }
-}
+  }}
