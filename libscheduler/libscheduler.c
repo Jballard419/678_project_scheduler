@@ -308,18 +308,11 @@ int scheduler_job(int job_number, int time, int running_time, int priority, int 
    newjob-> start_time = time;
    priqueue_offer( &s.queues[core_id], newjob);
 
-  //  if(temp->start_time == time)
-  //  {
-  //    temp->start_time=0;
-  //    scheduler_job(temp->job_id, temp->sent_time,temp->run_time, temp->priority, temp->wait_time,temp->rrindex);
-  //    return core_id;
-  //  }
     temp->run_time = test_time;
 
     temp->wait_time=temp->start_time - temp->sent_time;
 
-    if(temp->rrindex == 0 && temp->start_time == time){
-      //printf("Job_id:%d wait_time; %d \n", temp->job_id, temp->wait_time );
+    if(temp->rrindex == 0 ){
       s.total_respones= s.total_respones + temp->wait_time;
     }
     s.total_wait= s.total_wait + temp->wait_time;
