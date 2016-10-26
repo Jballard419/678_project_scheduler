@@ -88,9 +88,10 @@ int rr(const void * a, const void * b)
   job_t job2 = *((job_t *)b);
 	if (job1.job_id == job2.job_id)
 		return 0;
-  if(job1.rrindex >= job2.rrindex)
+   if(job1.rrindex != job2.rrindex)
     return ( job1.rrindex - job2.rrindex );
-  return ( job2.rrindex - job1.rrindex );
+  return ( job1.sent_time -  job2.sent_time );
+  // return ( job2.rrindex - job1.rrindex );
 }
  priqueue_t make_prique(scheme_t type)
  {
@@ -410,8 +411,11 @@ int scheduler_job_finished(int core_id, int job_number, int time)
  */
 int scheduler_quantum_expired(int core_id, int time)
 {
+
   //get the first element from the queue
   job_t *j= s.running_jobs[core_id];
+  if(priqueue_size(&s.queues[core_id]) == 1)
+    return j->job_id;
   int index;
   for(int i = 0; i < priqueue_size(&s.queues[core_id]); i++){
     job_t *temp = priqueue_at(&s.queues[core_id], i);
@@ -421,16 +425,18 @@ int scheduler_quantum_expired(int core_id, int time)
     }
   }
 
-  priqueue_remove_at(&s.queues[core_id], index);
+  j=priqueue_remove_at(&s.queues[core_id], index);
   // priqueue_poll(&s.queues[core_id]);
   //if there are no more elements in the queue just return -1 and continue until current process is done
-  j->rrindex = j->rrindex + 1;
-  j->sent_time = time;
+  j->rrindex ++;
   j->wait_time= j->wait_time + j->start_time - j->sent_time;
+  //j->sent_time = time;
+  j->start_time= 0;
+  j->run_time= j->run_time - (time - j->start_time);
 	priqueue_offer(&s.queues[core_id], j);
 
-  if(priqueue_size(&s.queues[core_id]) == 1)
-    return j->job_id;
+  // if(priqueue_size(&s.queues[core_id]) == 1)
+  //   return j->job_id;
   //look at the next element
   job_t *temp = priqueue_peek(&s.queues[core_id]);
   s.running_jobs[core_id]= temp;
@@ -515,5 +521,9 @@ void scheduler_clean_up()
  */
 void scheduler_show_queue()
 {
-
+  for(int j =0; j <s.core_num; j++)
+    for(int i=0; i<priqueue_size(&s.queues[j]); i++){
+      job_t* temp = priqueue_at(&s.queues[j],i);
+      printf("%d ", temp->job_id);
+    }
 }
