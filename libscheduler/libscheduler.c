@@ -214,9 +214,11 @@ int findcore_id(int time){
 	 }
    current_wait_time = get_current_wait_timeto(&s.queues[core_id], priqueue_size(&s.queues[core_id]),s.running_jobs[core_id], time);
    int diff=0;
-  
+   //if(s.running_jobs[core_id]->start_time< s.running_jobs[smallest_core]->start_time)
+    //diff=s.running_jobs[smallest_core]->start_time -s.running_jobs[core_id]->start_time;
+    //diff=diff - (-s.running_jobs[smallest_core]->run_time  -s.running_jobs[core_id]->run_time);
 
-	 if(current_wait_time < smallest_wait_time+diff)
+	 if(current_wait_time <= smallest_wait_time+diff)
    {
 		 smallest_core= core_id;
      smallest_wait_time=current_wait_time;
