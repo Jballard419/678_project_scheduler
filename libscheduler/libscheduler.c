@@ -321,7 +321,7 @@ int scheduler_job(int job_number, int time, int running_time, int priority, int 
 
     temp->wait_time=temp->start_time - temp->sent_time;
 
-    if(temp->rrindex == 0 ){
+    if(temp->has_run == 0 ){
       s.total_responses= s.total_responses + temp->wait_time;
     }
     s.total_wait= s.total_wait + temp->wait_time;
@@ -386,7 +386,7 @@ int scheduler_job_finished(int core_id, int job_number, int time)
           if((test->sent_time + test-> run_time + test-> wait_time) <=time)
           {
     				test = priqueue_remove_at(&s.queues[core_id], i);
-            if(test->rrindex == 0){
+            if(test->has_run == 0){
               //printf("Job_id:%d wait_time; %d", test->job_id, test->wait_time );
               s.total_responses= s.total_responses + test->wait_time;
             }
@@ -432,33 +432,34 @@ int scheduler_quantum_expired(int core_id, int time)
   //get the first element from the queue
   job_t *j= s.running_jobs[core_id];
   if(priqueue_size(&s.queues[core_id]) == 1){
-    // j->start_time = time;
     return j->job_id;
   }
-  int index;
-  for(int i = 0; i < priqueue_size(&s.queues[core_id]); i++){
-    job_t *temp = priqueue_at(&s.queues[core_id], i);
-    if(temp->job_id == j->job_id){
-      index = i;
-      break;
-    }
-  }
+  //int index;
 
-  j=priqueue_remove_at(&s.queues[core_id], index);
-  if(!j-> has_run){
-    s.total_responses += j->wait_time;
-  }
+
+    j->wait_time=  j->start_time - j->sent_time;
+    s.total_wait= s.total_wait +j->wait_time;
+    if((j-> has_run)==0){
+      s.total_responses += j->wait_time;
+    }
+    j->wait_time =0;// j->start_time = time;
+  j=priqueue_poll(&s.queues[core_id]);
+
+  s.total_turn_around = s.total_turn_around + (time - j->sent_time);
+
   j->rrindex ++;
-  j->wait_time= j->wait_time + j->start_time - j->sent_time;
+
+  j->has_run=1;
   j->sent_time = time;
   j->start_time= 0;
+  j->wait_time=0;
   j->run_time= j->run_time - (time - j->start_time);
 	priqueue_offer(&s.queues[core_id], j);
 
   //look at the next element
   job_t *temp = priqueue_peek(&s.queues[core_id]);
   temp->start_time =time;
-  temp->has_run = 1;
+  temp->wait_time=time - temp->sent_time;
   s.running_jobs[core_id]= temp;
   return (temp->job_id);
 }
@@ -518,6 +519,13 @@ float scheduler_average_response_time()
 */
 void scheduler_clean_up()
 {
+    for (int i; i <s.core_num; i++) {
+      priqueue_destroy(&s.queues[i]);
+      free(s.running_jobs[i]);
+    }
+    free(s.running_jobs);
+
+
 
 }
 
@@ -543,7 +551,7 @@ void scheduler_show_queue()
 {
   for(int j =0; j <s.core_num; j++)
     for(int i=0; i<priqueue_size(&s.queues[j]); i++){
-      job_t* temp = priqueue_at(&s.queues[j],i);
-      printf("%d ", temp->job_id);
+      job_t temp = *(job_t *)priqueue_at(&s.queues[j],i);
+      printf("%d ", temp.job_id);
     }
 }
