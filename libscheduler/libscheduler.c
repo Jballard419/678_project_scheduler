@@ -278,12 +278,15 @@ int scheduler_job(int job_number, int time, int running_time, int priority, int 
       s.total_responses= s.total_responses + test->wait_time;
     }
     s.total_wait= s.total_wait + test->wait_time;
+    test->wait_time=0;
     s.total_turn_around= s.total_turn_around + (time - test->sent_time);
     if(test->start_time != time)
     {
       test->rrindex+ 1;
       test->has_run = 1;
+
     }
+    test->sent_time =time;
     newjob->wait_time= 0;
     s.running_jobs[core_id]= newjob;
     if(priqueue_remove(&s.queue,test)!=1) // remove it for PSJF, and RR
@@ -305,11 +308,11 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
   int check =0;
   if(s.Type == RR){
     // TODO:fix
-    // job_t *test = priqueue_peek(&s.queues[0]);
-    // if(test!= NULL  && priqueue_size(&s.queues[0])> 1)
-    //   check = (test->rrindex) + 1;
-    // if (priqueue_size(&s.queue)== core_num)
-    //   check = (test->rrindex);
+    job_t *test = priqueue_peek(&s.queue);
+    if(test!= NULL  && priqueue_size(&s.queue)> 1)
+      check = (test->rrindex) + 1;
+    if (priqueue_size(&s.queue)== s.core_num)
+      check = (test->rrindex);
   }
   s.job_nums++;
   return scheduler_job(job_number,time,running_time,priority, 0, check, 0);
@@ -385,7 +388,7 @@ int scheduler_job_finished(int core_id, int job_number, int time)
 			test = priqueue_at(&s.queue, i);
 
 
-          if((test->sent_time + test-> run_time + test-> wait_time) <=time)
+          if((test->start_time + test-> run_time ) <=time)
           {
     				test = priqueue_remove_at(&s.queue, i);
             if(test->has_run == 0){
