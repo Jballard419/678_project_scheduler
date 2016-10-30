@@ -141,7 +141,11 @@ void init_scheduler(struct scheduler *s, int cores, scheme_t scheme )
 
   s->running_jobs = malloc(cores *sizeof(job_t));
 	s->core_num = cores;
-    s->queue=make_prique(scheme);
+  s->queue=make_prique(scheme);
+  for(int i =0; i<cores; i++)
+    {
+      s->running_jobs[i]= NULL;
+    }
 
   s->job_nums=0;
   s->total_wait=0;
@@ -329,7 +333,7 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
  */
  job_t* next_job()
  {
-    job_t* test;
+    job_t* test= NULL;
     int is_not_running = 1;
    for(int nex_job = 0; nex_job< priqueue_size(&s.queue); nex_job++)
    {
@@ -366,6 +370,7 @@ int find_index(int job_number)
     {
       return i;
     }
+    i++;
   }
   return -1;
 }
