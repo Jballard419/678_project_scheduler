@@ -340,6 +340,7 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
     int is_not_running = 1;
    for(int nex_job = 0; nex_job< priqueue_size(&s.queue); nex_job++)
    {
+     is_not_running =1;
      test = priqueue_at(&s.queue,nex_job );
      if(test== NULL) {
      break; }
@@ -356,12 +357,11 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
 
      }
      if (is_not_running)
-
       return test;
 
 
    }
-   return test;
+   return NULL;
  }
 int find_index(int job_number)
 {
