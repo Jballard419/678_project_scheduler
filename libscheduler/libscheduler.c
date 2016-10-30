@@ -138,7 +138,7 @@ int rr(const void * a, const void * b)
 */
 void init_scheduler(struct scheduler *s, int cores, scheme_t scheme )
 {
-  s->queue =  malloc( sizeof(priqueue_t));
+
   s->running_jobs = malloc(cores *sizeof(job_t));
 	s->core_num = cores;
     s->queue=make_prique(scheme);
@@ -163,6 +163,7 @@ void scheduler_start_up(int cores, scheme_t scheme)
 	// helper funiction to make a job
 job_t* init_job(int job_number, int time, int running_time, int priority,int wait_time, int rrindex, int has_run)
 {
+  job_t *newjob= malloc(sizeof(job_t));
 	newjob->job_id=job_number;
 	newjob->sent_time=time;
 	newjob->run_time=running_time;
@@ -188,7 +189,7 @@ int findlowest_core( int time)
    int lowest_pri = temp->priority;
    int pri_core = 0;
 
-  for (int i = 1; i < core_num; i++) {
+  for (int i = 1; i < s.core_num; i++) {
     temp= s.running_jobs[i];
     if(s.running_jobs[i] == NULL)
       return i;
@@ -260,13 +261,13 @@ int scheduler_job(int job_number, int time, int running_time, int priority, int 
 
     //TODO: make its own funiction
    job_t *test = s.running_jobs[core_id];
-   if(!((s.type == PPRI && newjob->run_time < (test->run_time - time + test->start_time))
-   ||(s.type == PSJF && newjob->priority < test->priority))){
+   if(!((s.Type == PSJF && newjob->run_time < (test->run_time - time + test->start_time))
+   ||(s.Type == PPRI && newjob->priority < test->priority))){
      return -1;
    }
 
+    test->run_time =test->run_time - time + test->start_time;
     newjob-> start_time = time;
-    test->run_time = test_time;
     test->wait_time=test->start_time - test->sent_time;
 
     if(test->has_run == 0 ){
@@ -279,15 +280,15 @@ int scheduler_job(int job_number, int time, int running_time, int priority, int 
       test->rrindex+ 1;
       test->has_run = 1;
     }
-    s.wait_time= 0;
+    newjob->wait_time= 0;
     s.running_jobs[core_id]= newjob;
-    if(remove(&s.queue)!=1) // remove it for PSJF, and RR
+    if(priqueue_remove(&s.queue,test)!=1) // remove it for PSJF, and RR
     {
       return -1;
     }
     priqueue_offer(&s.queue, test);
-   return core_id;
   }
+   return core_id;
 
   // offer to correct queue
 
@@ -329,12 +330,13 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
  job_t* next_job()
  {
     job_t* test;
-   for(int nex_job = 0; next_job< priqueue_size(&s.queue); i++)
+    int is_not_running = 1;
+   for(int nex_job = 0; nex_job< priqueue_size(&s.queue); nex_job++)
    {
-     test = priqueue_at(&s.queue,nex_job )
-     if(test== NULL)
-     break;
-     for(int i; i< core_num ; i++)
+     test = priqueue_at(&s.queue,nex_job );
+     if(test== NULL) {
+     break; }
+     for(int i; i< s.core_num ; i++)
      {
        if(s.running_jobs[i]== NULL)
        {
@@ -359,7 +361,7 @@ int find_index(int job_number)
   int i= 0;
 	while (i<size)
   {
-    test = priqueue_at(&s.queue, i)
+    test = priqueue_at(&s.queue, i);
     if(test->job_id == job_number)
     {
       return i;
@@ -388,14 +390,14 @@ int scheduler_job_finished(int core_id, int job_number, int time)
             s.total_wait= s.total_wait + test->wait_time;
             s.total_turn_around= s.total_turn_around + (time - test->sent_time);
             free(test);
-    				break;
+
           }else
           {
             return -1;
           }
 
-  int is_not_running = 1;
-  test =nex_job();
+
+  test =next_job();
   s.running_jobs[core_id]= test;
 
   //peek at top get job_id
@@ -427,7 +429,7 @@ int scheduler_quantum_expired(int core_id, int time)
 {
   //get the first element from the queue
   job_t *j= s.running_jobs[core_id];
-  if(priqueue_size(&s.queue) <= core_num){
+  if(priqueue_size(&s.queue) <= s.core_num){
     return j->job_id;
   }
   int index= find_index(j->job_id);
@@ -550,4 +552,4 @@ void scheduler_show_queue()
       job_t test = *(job_t *)priqueue_at(&s.queue,i);
       printf("%d ", test.job_id);
     }
-  }}
+  }
