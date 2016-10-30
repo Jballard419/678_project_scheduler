@@ -343,10 +343,12 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
      test = priqueue_at(&s.queue,nex_job );
      if(test== NULL) {
      break; }
+
      for(int i=0 ; i< s.core_num ; i++)
      {
 
         if(s.running_jobs[i]->job_id == test->job_id)
+
        {
          is_not_running =0;
          break;
@@ -354,7 +356,10 @@ int scheduler_new_job(int job_number, int time, int running_time, int priority)
 
      }
      if (is_not_running)
+
       return test;
+
+
    }
    return test;
  }
