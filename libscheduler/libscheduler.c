@@ -23,7 +23,7 @@ typedef struct _job_t
   int run_time;
   int origin_time;
   int priority;
-	int rrindex ;
+
   int has_run;
 
 } job_t;
@@ -96,20 +96,10 @@ int ppri(const void * a, const void * b)
 }
 int rr(const void * a, const void * b)
 {
-	job_t job1 = *((job_t *)a);
-  job_t job2 = *((job_t *)b);
-	if (job1.job_id == job2.job_id)
-		return 0;
-   if(job1.rrindex != job2.rrindex)
-    return ( job1.rrindex - job2.rrindex);
-   if(job1.sent_time !=  job2.sent_time)
-    {
-      return ( job1.sent_time -  job2.sent_time );
-    }
-  return ( job1.origin_time -  job2.origin_time );
+	if(b == NULL)
+    return 0;
+  return 1;
 
-
-  // return ( job2.rrindex - job1.rrindex );
 }
  priqueue_t make_prique(scheme_t type)
  {
@@ -182,7 +172,7 @@ void scheduler_start_up(int cores, scheme_t scheme)
 
 }
 	// helper funiction to make a job
-job_t* init_job(int job_number, int time, int running_time, int priority,int wait_time, int rrindex, int has_run)
+job_t* init_job(int job_number, int time, int running_time, int priority,int wait_time,  int has_run)
 {
   job_t *newjob= malloc(sizeof(job_t));
 	newjob->job_id=job_number;
@@ -192,7 +182,6 @@ job_t* init_job(int job_number, int time, int running_time, int priority,int wai
 	newjob->priority= priority;
 	newjob->wait_time= wait_time;
 	newjob -> start_time=0;
-	newjob -> rrindex =rrindex;
   newjob -> has_run = has_run;
 	return newjob;
 
@@ -208,23 +197,30 @@ int findlowest_core( int time)
    int longest_rt= temp->run_time -(time - temp->start_time);
    int rt_core= 0;
    int rt_temp= longest_rt;
-   int lowest_pri = temp->priority;
+   int highest_pri = temp->priority;
    int pri_core = 0;
+   int start_time = temp->start_time;
 
   for (int i = 1; i < s.core_num; i++) {
     temp= s.running_jobs[i];
     if(s.running_jobs[i] == NULL)
       return i;
     rt_temp =temp->run_time -(time - temp->start_time);
-    if(rt_temp>longest_rt)
+    if(rt_temp>=longest_rt)
     {
       rt_core = i;
       longest_rt = rt_temp;
     }
-    if(temp->priority > lowest_pri)
+    if(temp->priority > highest_pri)
     {
-      lowest_pri =temp->priority;
+      highest_pri =temp->priority;
       pri_core=i;
+      start_time= temp->start_time;
+    }
+    if(temp->priority == highest_pri && temp-> origin_time > start_time){
+      highest_pri =temp->priority;
+      pri_core=i;
+      start_time= temp->origin_time;
     }
 
   }
@@ -273,10 +269,10 @@ int find_index(int job_number)
   }
   return -1;
 }
-int scheduler_job(int job_number, int time, int running_time, int priority, int wait_time, int rrindex, int has_run)
+int scheduler_job(int job_number, int time, int running_time, int priority, int wait_time,  int has_run)
 {
 
-	job_t *newjob= init_job(job_number,time,running_time,priority, wait_time, rrindex, has_run);
+	job_t *newjob= init_job(job_number,time,running_time,priority, wait_time,  has_run);
 
   int core_id=find_empty_core();
 
@@ -316,7 +312,7 @@ int scheduler_job(int job_number, int time, int running_time, int priority, int 
     s.total_turn_around= s.total_turn_around + (time - test->sent_time);
     if(test->start_time != time)
     {
-      test->rrindex++;
+
       test->has_run = 1;
 
     }
@@ -337,17 +333,10 @@ int scheduler_job(int job_number, int time, int running_time, int priority, int 
 int scheduler_new_job(int job_number, int time, int running_time, int priority)
 {
   //TODO::set up for multi cores
-  int check =0;
-  if(s.Type == RR){
-    // TODO:fix
-    job_t *test = priqueue_peek(&s.queue);
-    if(test!= NULL  && priqueue_size(&s.queue)> 1)
-      check = (test->rrindex) + 1;
-    if (priqueue_size(&s.queue)== s.core_num)
-      check = (test->rrindex);
-  }
+
+
   s.job_nums++;
-  return scheduler_job(job_number,time,running_time,priority, 0, check, 0);
+  return scheduler_job(job_number,time,running_time,priority, 0, 0);
 }
 
 
@@ -473,7 +462,7 @@ int scheduler_quantum_expired(int core_id, int time)
 
   s.total_turn_around = s.total_turn_around + (time - j->sent_time);
 
-  j->rrindex ++;
+
 
   j->has_run=1;
   j->sent_time = time;
