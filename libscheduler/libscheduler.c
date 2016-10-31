@@ -199,7 +199,8 @@ int findlowest_core( int time)
    int rt_temp= longest_rt;
    int highest_pri = temp->priority;
    int pri_core = 0;
-   int start_time = temp->start_time;
+   int pri_start_time = temp->origin_time;
+   int job_start_time = temp->origin_time;
 
   for (int i = 1; i < s.core_num; i++) {
     temp= s.running_jobs[i];
@@ -210,17 +211,24 @@ int findlowest_core( int time)
     {
       rt_core = i;
       longest_rt = rt_temp;
+      job_start_time = temp->origin_time;
+
+    }
+    if(rt_temp == longest_rt && temp-> origin_time > job_start_time){
+      rt_core = i;
+      longest_rt = rt_temp;
+      job_start_time = temp->origin_time;
     }
     if(temp->priority > highest_pri)
     {
       highest_pri =temp->priority;
       pri_core=i;
-      start_time= temp->start_time;
+      pri_start_time= temp->origin_time;
     }
-    if(temp->priority == highest_pri && temp-> origin_time > start_time){
+    if(temp->priority == highest_pri && temp-> origin_time > pri_start_time){
       highest_pri =temp->priority;
       pri_core=i;
-      start_time= temp->origin_time;
+      pri_start_time= temp->origin_time;
     }
 
   }
@@ -536,9 +544,10 @@ void scheduler_clean_up()
 {
 
       priqueue_destroy(&s.queue);
-      //free(s.running_jobs[i]);
 
-    //free(s.running_jobs);
+    // free(s.running_jobs[i]);
+
+     free(s.running_jobs);
 
 
 
